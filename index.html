@@ -53,23 +53,41 @@ function init(data) {
   container.innerHTML = "";
 
   plan.forEach(p => {
-    const day = p[0];
-    const meal = p[1];
+    const select = document.createElement("select");
+select.innerHTML = `
+  <option value="">Any</option>
+  <option value="beef">Beef</option>
+  <option value="chicken">Chicken</option>
+  <option value="vegetarian">Vegetarian</option>
+  <option value="pork">Pork</option>
+`;
 
-    const div = document.createElement("div");
-    div.className = "row";
+const btn = document.createElement("button");
+btn.textContent = "Generate";
 
-    const span = document.createElement("span");
-    span.id = `${day}-${meal}`;
+btn.onclick = () => {
+  const chosenTag = select.value;
 
-    const btn = document.createElement("button");
-    btn.textContent = "Generate";
-    btn.onclick = () => {
-      const r = recipes[Math.floor(Math.random() * recipes.length)];
-      span.innerHTML = `<a href="${r.url}" target="_blank">${r.name}</a>`;
+  const filtered = chosenTag
+    ? recipes.filter(r =>
+        r.tags.split(",").map(t => t.trim()).includes(chosenTag)
+      )
+    : recipes;
+
+  if (filtered.length === 0) {
+    span.textContent = "No matching recipes";
+    return;
+  }
+
+  const r = filtered[Math.floor(Math.random() * filtered.length)];
+  span.innerHTML = `<a href="${r.url}" target="_blank">${r.name}</a>`;
+};
+
     };
 
     div.innerHTML = `<strong>${day} ${meal}</strong>`;
+  div.appendChild(select);
+
     div.appendChild(btn);
     div.appendChild(span);
 
