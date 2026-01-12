@@ -104,13 +104,20 @@ Promise.all([
     label.innerText = `${day} ${meal}`;
 
     const select = document.createElement("select");
-    select.innerHTML = `
-      <option value="">Any</option>
-      <option value="beef">Beef</option>
-      <option value="chicken">Chicken</option>
-      <option value="vegetarian">Vegetarian</option>
-      <option value="pork">Pork</option>
-    `;
+select.innerHTML = `<option value="">Any</option>`;
+
+const allTags = new Set();
+recipes.forEach(r => {
+  r.tags.split(",").forEach(t => allTags.add(t.trim()));
+});
+
+[...allTags].sort().forEach(tag => {
+  const opt = document.createElement("option");
+  opt.value = tag;
+  opt.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+  select.appendChild(opt);
+});
+
 
     const btn = document.createElement("button");
     btn.innerText = "Generate";
