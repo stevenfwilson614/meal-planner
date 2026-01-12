@@ -1,19 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Weekly Meal Planner</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 16px;
+      max-width: 500px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    .row {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+    button {
+      margin-left: 8px;
+    }
+    a {
+      margin-left: 8px;
+    }
+  </style>
 </head>
 <body>
 
-  
 <h1>Weekly Meal Planner</h1>
+<div id="planner">Loading meal plan…</div>
 
-<div id="planner">
-  <div><strong>Monday Lunch</strong> <button>Generate</button></div>
-  <div><strong>Monday Dinner</strong> <button>Generate</button></div>
-  <div><strong>Tuesday Lunch</strong> <button>Generate</button></div>
-</div>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyryC29KQOmpcL8e8tHsYNsnSyhwwXGNvA1fQvREy9vSkQ3854TDYUoVoJtpeybOI-G/exec";
+
+fetch(API_URL)
+  .then(res => res.json())
+  .then(data => init(data))
+  .catch(err => {
+    console.error(err);
+    document.getElementById("planner").innerText =
+      "Failed to load meal plan.";
+  });
+
+function init(data) {
+  const recipes = data.recipes.slice(1).map(r => ({
+    id: r[0],
+    name: r[1],
+    url: r[2],
+    tags: r[3]
+  }));
+
+  const plan = data.plan.slice(1);
+  const container = document.getElementById("planner");
+  container.innerHTML = "";
+
+  plan.forEach(p => {
+    const day = p[0];
+    const meal = p[1];
+
+    const div = document.createElement("div");
+    div.className = "row";
+
+    const label = document.createElement("strong");
+    label.innerText = `${day} ${meal}`;
+
+    const span = document.createElement("span");
+
+    const btn = document.createElement("button");
+    btn.innerText = "Generate";
+    btn.onclick = () => {
+      const r = recipes[Math.floor(Math.random() * recipes.length)];
+      span.innerHTML = `<a href="${r.url}" target="_blank">${r.name}</a>`;
+    };
+
+    div.appendChild(label);
+    div.appendChild(btn);
+    div.appendChild(span);
+    container.appendChild(div);
+  });
+}
+</script>
 
 </body>
 </html>
