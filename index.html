@@ -43,8 +43,10 @@ const PLAN_URL =
 
 /* ===== HELPERS ===== */
 function parseGViz(text) {
-  return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+  const json = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/s);
+  return JSON.parse(json[1]).table.rows;
 }
+
 
 /* ===== LOAD DATA ===== */
 Promise.all([
