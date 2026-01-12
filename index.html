@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Weekly Meal Planner</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       padding: 16px;
-      max-width: 500px;
+      max-width: 520px;
       margin: auto;
     }
     h1 {
@@ -17,119 +17,75 @@
       border-bottom: 1px solid #ddd;
       padding: 10px 0;
     }
-    button {
-      margin-left: 8px;
+    select, button {
+      margin-left: 6px;
     }
     a {
-      margin-left: 8px;
+      margin-left: 6px;
     }
   </style>
 </head>
 <body>
 
 <h1>Weekly Meal Planner</h1>
-<div id="planner">Loading meal plan…</div>
+<div id="planner">Loading…</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyryC29KQOmpcL8e8tHsYNsnSyhwwXGNvA1fQvREy9vSkQ3854TDYUoVoJtpeybOI-G/exec";
+/* ===== CONFIG ===== */
+const SHEET_ID = "1S_NX1UxOB38aB-9As9gC8zH4BQMSuONk4g7f5jL8nmE";
 
-fetch(API_URL)
-  .then(res => {
-    if (!res.ok) {
-      throw new Error("Network response was not OK");
-    }
-    return res.text();
-  })
-  .then(text => {
-    if (!text.startsWith("{")) {
-      throw new Error("API did not return JSON");
-    }
-    const data = JSON.parse(text);
-    init(data);
-  })
-  .catch(err => {
-    console.error(err);
-    document.getElementById("planner").innerText =
-      "Unable to load data. Please refresh the page.";
-  });
+/* ===== DATA URLS ===== */
+const RECIPES_URL =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Recipes`;
 
+const PLAN_URL =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=WeeklyPlan`;
 
-function init(data) {
-  const recipes = data.recipes.slice(1).map(r => ({
-    id: r[0],
-    name: r[1],
-    url: r[2],
-    tags: r[3]
+/* ===== HELPERS ===== */
+function parseGViz(text) {
+  return JSON.parse(text.substring(47).slice(0, -2)).table.rows;
+}
+
+/* ===== LOAD DATA ===== */
+Promise.all([
+  fetch(RECIPES_URL).then(r => r.text()),
+  fetch(PLAN_URL).then(r => r.text())
+]).then(([recipesText, planText]) => {
+
+  const recipes = parseGViz(recipesText).map(r => ({
+    name: r.c[1]?.v || "",
+    url: r.c[2]?.v || "",
+    tags: (r.c[3]?.v || "").toLowerCase()
   }));
 
-  const plan = data.plan.slice(1);
+  const plan = parseGViz(planText);
   const container = document.getElementById("planner");
   container.innerHTML = "";
 
-  plan.forEach(p => {
-    const day = p[0];
-    const meal = p[1];
+  plan.forEach(r => {
+    const day = r.c[0]?.v;
+    const meal = r.c[1]?.v;
 
-    const div = document.createElement("div");
-    div.className = "row";
+    const row = document.createElement("div");
+    row.className = "row";
 
     const label = document.createElement("strong");
     label.innerText = `${day} ${meal}`;
 
-    const span = document.createElement("span");
-
     const select = document.createElement("select");
-select.innerHTML = `
-  <option value="">Any</option>
-  <option value="beef">Beef</option>
-  <option value="chicken">Chicken</option>
-  <option value="vegetarian">Vegetarian</option>
-  <option value="pork">Pork</option>
-`;
+    select.innerHTML = `
+      <option value="">Any</option>
+      <option value="beef">Beef</option>
+      <option value="chicken">Chicken</option>
+      <option value="vegetarian">Vegetarian</option>
+      <option value="pork">Pork</option>
+    `;
 
-const btn = document.createElement("button");
-btn.innerText = "Generate";
+    const btn = document.createElement("button");
+    btn.innerText = "Generate";
 
-btn.onclick = () => {
-  const tag = select.value;
+    const result = document.createElement("span");
 
-  const filtered = tag
-    ? recipes.filter(r =>
-        r.tags
-          .split(",")
-          .map(t => t.trim())
-          const filtered = tag
-  ? recipes.filter(r =>
-      r.tags
-        .toLowerCase()
-        .split(",")
-        .map(t => t.trim())
-        .includes(tag.toLowerCase())
-    )
-  : recipes;
-
-      )
-    : recipes;
-
-  if (filtered.length === 0) {
-    span.innerText = "No matching recipes";
-    return;
-  }
-
-  const r = filtered[Math.floor(Math.random() * filtered.length)];
-  span.innerHTML = `<a href="${r.url}" target="_blank">${r.name}</a>`;
-};
-
-
-    div.appendChild(label);
-    div.appendChild(select);
-
-    div.appendChild(btn);
-    div.appendChild(span);
-    container.appendChild(div);
-  });
-}
-</script>
-
-</body>
-</html>
+    btn.onclick = () => {
+      const tag = select.value;
+      const filtered = t
