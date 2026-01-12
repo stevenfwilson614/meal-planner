@@ -40,11 +40,41 @@ const PLAN_CSV =
   `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=2118385531`;
 
 function parseCSV(text) {
-  return text
-    .trim()
-    .split("\n")
-    .map(row => row.split(",").map(c => c.replace(/^"|"$/g, "").trim()));
+  const rows = [];
+  let row = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i++;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      row.push(current);
+      current = "";
+    } else if (char === "\n" && !inQuotes) {
+      row.push(current);
+      rows.push(row.map(c => c.trim()));
+      row = [];
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.length || row.length) {
+    row.push(current);
+    rows.push(row.map(c => c.trim()));
+  }
+
+  return rows;
 }
+
 
 Promise.all([
   fetch(RECIPES_CSV).then(r => r.text()),
