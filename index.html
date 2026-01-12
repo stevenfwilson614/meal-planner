@@ -32,21 +32,21 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyryC29KQOmpcL8e8tHsYNsnSyhwwXGNvA1fQvREy9vSkQ3854TDYUoVoJtpeybOI-G/exec";
 
 fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-  console.log("DATA:", data);
-  init(data);
-})
-.catch(err => {
-  console.error("FETCH ERROR:", err);
-  document.getElementById("planner").innerText = "Failed to load data.";
-});
-
+  .then(res => {
+    console.log("RESPONSE STATUS:", res.status);
+    return res.text();
+  })
+  .then(text => {
+    console.log("RAW RESPONSE:", text);
+    const data = JSON.parse(text);
+    init(data);
+  })
   .catch(err => {
+    console.error("FETCH ERROR:", err);
     document.getElementById("planner").innerText =
-      "Error loading data.";
-    console.error(err);
+      "Failed to load meal plan.";
   });
+
 
 function init(data) {
   const recipes = data.recipes.slice(1).map(r => ({
