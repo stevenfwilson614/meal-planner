@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Weekly Meal Planner</title>
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
@@ -10,14 +11,12 @@
       max-width: 520px;
       margin: auto;
     }
-    h1 
-    <p style="color:red;font-weight:bold;">DEBUG VERSION TWO DROPDOWNS</p>
-{
+    h1 {
       text-align: center;
     }
     .row {
       border-bottom: 1px solid #ddd;
-      padding: 10px 0;
+      padding: 12px 0;
     }
     select, button {
       margin-left: 6px;
@@ -33,60 +32,71 @@
 <div id="planner">Loading…</div>
 
 <script>
-const SHEET_ID = "1S_NX1UxOB38aB-9As9gC8zH4BQMSuONk4g7f5jL8nmE";
-const PROTEIN_TAGS = ["Beef", "Chicken", "Fish", "Lamb", "Egg", "Tempe", "Tahu", "Pumkin", "Potatoe"];
-const CUISINE_TAGS = ["Medetteranian", "Mexican", "Indonesian", "Indian"];
+/* ===================== CONFIG ===================== */
 
-const RECIPES_CSV =
+const SHEET_ID = "1S_NX1UxOB38aB-9As9gC8zH4BQMSuONk4g7f5jL8nmE";
+
+/* These MUST exist in your tags column */
+const PROTEIN_TAGS = ["beef", "chicken", "pork", "seafood", "vegetarian"];
+const CUISINE_TAGS = ["italian", "mexican", "indonesian", "thai", "asian"];
+
+/* ===================== CSV URLS ===================== */
+
+const RECIPES_URL =
   `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
-const PLAN_CSV =
+const PLAN_URL =
   `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=2118385531`;
+
+/* ===================== CSV PARSER ===================== */
+/* Handles commas inside fields correctly */
 
 function parseCSV(text) {
   const rows = [];
   let row = [];
-  let current = "";
-  let inQuotes = false;
+  let value = "";
+  let insideQuotes = false;
 
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     const next = text[i + 1];
 
-    if (char === '"' && inQuotes && next === '"') {
-      current += '"';
+    if (char === '"' && insideQuotes && next === '"') {
+      value += '"';
       i++;
     } else if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === "," && !inQuotes) {
-      row.push(current);
-      current = "";
-    } else if (char === "\n" && !inQuotes) {
-      row.push(current);
-      rows.push(row.map(c => c.trim()));
+      insideQuotes = !insideQuotes;
+    } else if (char === "," && !insideQuotes) {
+      row.push(value);
+      value = "";
+    } else if (char === "\n" && !insideQuotes) {
+      row.push(value);
+      rows.push(row.map(v => v.trim()));
       row = [];
-      current = "";
+      value = "";
     } else {
-      current += char;
+      value += char;
     }
   }
 
-  if (current.length || row.length) {
-    row.push(current);
-    rows.push(row.map(c => c.trim()));
+  if (value.length || row.length) {
+    row.push(value);
+    rows.push(row.map(v => v.trim()));
   }
 
   return rows;
 }
 
+/* ===================== LOAD DATA ===================== */
 
 Promise.all([
-  fetch(RECIPES_CSV).then(r => r.text()),
-  fetch(PLAN_CSV).then(r => r.text())
-]).then(([recipesText, planText]) => {
+  fetch(RECIPES_URL).then(r => r.text()),
+  fetch(PLAN_URL).then(r => r.text())
+])
+.then(([recipesCSV, planCSV]) => {
 
-  const recipesRaw = parseCSV(recipesText).slice(1);
-  const planRaw = parseCSV(planText).slice(1);
+  const recipesRaw = parseCSV(recipesCSV).slice(1);
+  const planRaw = parseCSV(planCSV).slice(1);
 
   const recipes = recipesRaw.map(r => ({
     name: r[1],
@@ -98,71 +108,69 @@ Promise.all([
   container.innerHTML = "";
 
   planRaw.forEach(r => {
-    planRaw.forEach(r => {
-  const day = r[0];
-  const meal = r[1];
+    const day = r[0];
+    const meal = r[1];
 
-  const row = document.createElement("div");
-  row.className = "row";
+    const row = document.createElement("div");
+    row.className = "row";
 
-  const label = document.createElement("strong");
-  label.textContent = `${day} ${meal}`;
+    const label = document.createElement("strong");
+    label.textContent = `${day} ${meal}`;
 
-  // Protein dropdown
-  const proteinSelect = document.createElement("select");
-  proteinSelect.innerHTML = `<option value="">Any protein</option>`;
-  PROTEIN_TAGS.forEach(t => {
-    const o = document.createElement("option");
-    o.value = t;
-    o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
-    proteinSelect.appendChild(o);
-  });
-
-  // Cuisine dropdown
-  const cuisineSelect = document.createElement("select");
-  cuisineSelect.innerHTML = `<option value="">Any cuisine</option>`;
-  CUISINE_TAGS.forEach(t => {
-    const o = document.createElement("option");
-    o.value = t;
-    o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
-    cuisineSelect.appendChild(o);
-  });
-
-  const btn = document.createElement("button");
-  btn.textContent = "Generate";
-
-  const result = document.createElement("span");
-
-  btn.onclick = () => {
-    const protein = proteinSelect.value;
-    const cuisine = cuisineSelect.value;
-
-    const filtered = recipes.filter(rec => {
-      const tags = rec.tags.split(",").map(t => t.trim());
-      if (protein && !tags.includes(protein)) return false;
-      if (cuisine && !tags.includes(cuisine)) return false;
-      return true;
+    /* Protein dropdown */
+    const proteinSelect = document.createElement("select");
+    proteinSelect.innerHTML = `<option value="">Any protein</option>`;
+    PROTEIN_TAGS.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      proteinSelect.appendChild(o);
     });
 
-    if (!filtered.length) {
-      result.textContent = " No matches";
-      return;
-    }
+    /* Cuisine dropdown */
+    const cuisineSelect = document.createElement("select");
+    cuisineSelect.innerHTML = `<option value="">Any cuisine</option>`;
+    CUISINE_TAGS.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      cuisineSelect.appendChild(o);
+    });
 
-    const pick = filtered[Math.floor(Math.random() * filtered.length)];
-    result.innerHTML = ` <a href="${pick.url}" target="_blank">${pick.name}</a>`;
-  };
+    const btn = document.createElement("button");
+    btn.textContent = "Generate";
 
-  row.append(label, proteinSelect, cuisineSelect, btn, result);
-  container.appendChild(row);
-});
+    const result = document.createElement("span");
 
+    btn.onclick = () => {
+      const protein = proteinSelect.value;
+      const cuisine = cuisineSelect.value;
+
+      const filtered = recipes.filter(rec => {
+        const tags = rec.tags.split(",").map(t => t.trim());
+        if (protein && !tags.includes(protein)) return false;
+        if (cuisine && !tags.includes(cuisine)) return false;
+        return true;
+      });
+
+      if (!filtered.length) {
+        result.textContent = " No matches";
+        return;
+      }
+
+      const pick = filtered[Math.floor(Math.random() * filtered.length)];
+      result.innerHTML = ` <a href="${pick.url}" target="_blank">${pick.name}</a>`;
+    };
+
+    row.append(label, proteinSelect, cuisineSelect, btn, result);
+    container.appendChild(row);
   });
 
-}).catch(err => {
+})
+.catch(err => {
   console.error(err);
-  document.getElementById("planner").innerText =
-    "Failed to load meal plan.";
+  document.getElementById("planner").textContent =
+    "Failed to load menu.";
 });
 </script>
 
