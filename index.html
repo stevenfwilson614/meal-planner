@@ -86,7 +86,16 @@ btn.onclick = () => {
         r.tags
           .split(",")
           .map(t => t.trim())
-          .includes(tag)
+          const filtered = tag
+  ? recipes.filter(r =>
+      r.tags
+        .toLowerCase()
+        .split(",")
+        .map(t => t.trim())
+        .includes(tag.toLowerCase())
+    )
+  : recipes;
+
       )
     : recipes;
 
