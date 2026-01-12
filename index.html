@@ -34,13 +34,25 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyryC29KQOmpcL8e8tHsYNsnSyhwwXGNvA1fQvREy9vSkQ3854TDYUoVoJtpeybOI-G/exec";
 
 fetch(API_URL)
-  .then(res => res.json())
-  .then(data => init(data))
+  .then(res => {
+    if (!res.ok) {
+      throw new Error("Network response was not OK");
+    }
+    return res.text();
+  })
+  .then(text => {
+    if (!text.startsWith("{")) {
+      throw new Error("API did not return JSON");
+    }
+    const data = JSON.parse(text);
+    init(data);
+  })
   .catch(err => {
     console.error(err);
     document.getElementById("planner").innerText =
-      "Failed to load meal plan.";
+      "Unable to load data. Please refresh the page.";
   });
+
 
 function init(data) {
   const recipes = data.recipes.slice(1).map(r => ({
