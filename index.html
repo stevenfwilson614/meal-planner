@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Weekly Meal Planner</title>
   <style>
     body {
@@ -31,42 +31,41 @@
 <div id="planner">Loading…</div>
 
 <script>
-/* ===== CONFIG ===== */
 const SHEET_ID = "1S_NX1UxOB38aB-9As9gC8zH4BQMSuONk4g7f5jL8nmE";
 
-/* ===== DATA URLS ===== */
-const RECIPES_URL =
-  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Recipes`;
+const RECIPES_CSV =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
-const PLAN_URL =
-  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=WeeklyPlan`;
+const PLAN_CSV =
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=2118385531`;
 
-/* ===== HELPERS ===== */
-function parseGViz(text) {
-  const json = text.match(/google\.visualization\.Query\.setResponse\((.*)\);/s);
-  return JSON.parse(json[1]).table.rows;
+function parseCSV(text) {
+  return text
+    .trim()
+    .split("\n")
+    .map(row => row.split(",").map(c => c.replace(/^"|"$/g, "").trim()));
 }
 
-
-/* ===== LOAD DATA ===== */
 Promise.all([
-  fetch(RECIPES_URL).then(r => r.text()),
-  fetch(PLAN_URL).then(r => r.text())
+  fetch(RECIPES_CSV).then(r => r.text()),
+  fetch(PLAN_CSV).then(r => r.text())
 ]).then(([recipesText, planText]) => {
 
-  const recipes = parseGViz(recipesText).map(r => ({
-    name: r.c[1]?.v || "",
-    url: r.c[2]?.v || "",
-    tags: (r.c[3]?.v || "").toLowerCase()
+  const recipesRaw = parseCSV(recipesText).slice(1);
+  const planRaw = parseCSV(planText).slice(1);
+
+  const recipes = recipesRaw.map(r => ({
+    name: r[1],
+    url: r[2],
+    tags: (r[3] || "").toLowerCase()
   }));
 
-  const plan = parseGViz(planText);
   const container = document.getElementById("planner");
   container.innerHTML = "";
 
-  plan.forEach(r => {
-    const day = r.c[0]?.v;
-    const meal = r.c[1]?.v;
+  planRaw.forEach(r => {
+    const day = r[0];
+    const meal = r[1];
 
     const row = document.createElement("div");
     row.className = "row";
@@ -90,4 +89,31 @@ Promise.all([
 
     btn.onclick = () => {
       const tag = select.value;
-      const filtered = t
+      const filtered = tag
+        ? recipes.filter(r =>
+            r.tags.split(",").map(t => t.trim()).includes(tag)
+          )
+        : recipes;
+
+      if (!filtered.length) {
+        result.innerText = " No matches";
+        return;
+      }
+
+      const pick = filtered[Math.floor(Math.random() * filtered.length)];
+      result.innerHTML = ` <a href="${pick.url}" target="_blank">${pick.name}</a>`;
+    };
+
+    row.append(label, select, btn, result);
+    container.appendChild(row);
+  });
+
+}).catch(err => {
+  console.error(err);
+  document.getElementById("planner").innerText =
+    "Failed to load meal plan.";
+});
+</script>
+
+</body>
+</html>
