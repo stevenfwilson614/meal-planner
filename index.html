@@ -98,56 +98,65 @@ Promise.all([
   container.innerHTML = "";
 
   planRaw.forEach(r => {
-    const day = r[0];
-    const meal = r[1];
+    planRaw.forEach(r => {
+  const day = r[0];
+  const meal = r[1];
 
-    const row = document.createElement("div");
-    row.className = "row";
+  const row = document.createElement("div");
+  row.className = "row";
 
-    const label = document.createElement("strong");
-    label.innerText = `${day} ${meal}`;
+  const label = document.createElement("strong");
+  label.textContent = `${day} ${meal}`;
 
-    const select = document.createElement("select");
-select.innerHTML = `<option value="">Any</option>`;
+  // Protein dropdown
+  const proteinSelect = document.createElement("select");
+  proteinSelect.innerHTML = `<option value="">Any protein</option>`;
+  PROTEIN_TAGS.forEach(t => {
+    const o = document.createElement("option");
+    o.value = t;
+    o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+    proteinSelect.appendChild(o);
+  });
 
-const allTags = new Set();
-recipes.forEach(r => {
-  r.tags.split(",").forEach(t => allTags.add(t.trim()));
+  // Cuisine dropdown
+  const cuisineSelect = document.createElement("select");
+  cuisineSelect.innerHTML = `<option value="">Any cuisine</option>`;
+  CUISINE_TAGS.forEach(t => {
+    const o = document.createElement("option");
+    o.value = t;
+    o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+    cuisineSelect.appendChild(o);
+  });
+
+  const btn = document.createElement("button");
+  btn.textContent = "Generate";
+
+  const result = document.createElement("span");
+
+  btn.onclick = () => {
+    const protein = proteinSelect.value;
+    const cuisine = cuisineSelect.value;
+
+    const filtered = recipes.filter(rec => {
+      const tags = rec.tags.split(",").map(t => t.trim());
+      if (protein && !tags.includes(protein)) return false;
+      if (cuisine && !tags.includes(cuisine)) return false;
+      return true;
+    });
+
+    if (!filtered.length) {
+      result.textContent = " No matches";
+      return;
+    }
+
+    const pick = filtered[Math.floor(Math.random() * filtered.length)];
+    result.innerHTML = ` <a href="${pick.url}" target="_blank">${pick.name}</a>`;
+  };
+
+  row.append(label, proteinSelect, cuisineSelect, btn, result);
+  container.appendChild(row);
 });
 
-[...allTags].sort().forEach(tag => {
-  const opt = document.createElement("option");
-  opt.value = tag;
-  opt.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
-  select.appendChild(opt);
-});
-
-
-    const btn = document.createElement("button");
-    btn.innerText = "Generate";
-
-    const result = document.createElement("span");
-
-    btn.onclick = () => {
-      const tag = select.value;
-      const filtered = tag
-        ? recipes.filter(r =>
-            r.tags.split(",").map(t => t.trim()).includes(tag)
-          )
-        : recipes;
-
-      if (!filtered.length) {
-        result.innerText = " No matches";
-        return;
-      }
-
-      const pick = filtered[Math.floor(Math.random() * filtered.length)];
-      result.innerHTML = ` <a href="${pick.url}" target="_blank">${pick.name}</a>`;
-    };
-
-    row.append(label, proteinSelect, cuisineSelect, btn, result);
-
-    container.appendChild(row);
   });
 
 }).catch(err => {
